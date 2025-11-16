@@ -1,13 +1,21 @@
 import pgzrun
 import time
-import random # Adicionando a biblioteca random (permitida)
+import random 
+import sys # Usado para fechar o jogo
+from pygame import Rect # O import que faltava
 
 # Define as dimensões da tela
 WIDTH = 800
 HEIGHT = 600
 
 # Titulo do jogo
-TITLE = "Teste Kodland - Etapa 5: Inimigos"
+TITLE = "Teste Kodland - Jogo Completo"
+
+# Define o estado inicial do jogo
+game_state = "menu"
+
+# Controla se a música está ligada ou desligada
+music_on = True
 
 # Define a simple actor (sprite)
 class Player(Actor):
@@ -63,6 +71,10 @@ class Player(Actor):
         if keyboard.up and self.on_ground:
             self.vy = self.jump_strength
             self.on_ground = False # Sai do chão ao pular
+            try:
+                sounds.jump.play() # Toca o som de pulo
+            except:
+                pass # Ignora se o som falhar
         
         # Aplica a gravidade
         self.vy += self.gravity
@@ -71,7 +83,7 @@ class Player(Actor):
         # Verifica colisão com plataformas
         self.on_ground = False
 
-        for plat in platform_list:
+        for plat in platforms:
             # Verifica se está colidindo com a plataforma
             if self.colliderect(plat) and self.vy >= 0:
                 # Verifica se a colisão é por cima (evita grudar na lateral)
@@ -129,6 +141,8 @@ class Enemy(Actor):
         # Chama a função de animação
         self.update_animation()
 
+# Criação dos Objetos e Nível
+
 # Definindo a posição inicial do jogador
 posicao_inicial = (WIDTH // 2, HEIGHT // 2 - 100)
 
@@ -140,14 +154,12 @@ platforms = []
 
 # criar um chão de 10 blocos na parte de baixo da tela
 for i in range(10):
-    
     x_pos = 50 + (i * 70)  # Espaçamento entre blocos
     y_pos = HEIGHT - 35    # Posição vertical do chão
-
-    # Cria o ator da plataforma e adiciona na lista
     plat = Actor('platform.png', pos=(x_pos, y_pos))
     platforms.append(plat)
 
+# Plataforma flutuante
 plat_flutuante = Actor('platform.png', pos=(WIDTH / 2, HEIGHT / 2))
 platforms.append(plat_flutuante)
 
@@ -159,39 +171,120 @@ enemy_pos = (200, HEIGHT - 70)
 enemy1 = Enemy(enemy_pos)
 enemies.append(enemy1)
 
-# Lógica do jogo
-def update():
-    # Atualiza o jogador, passando a lista de plataformas para colisão
-    hero.update(platforms)
-    
-    # Atualiza todos os inimigos
-    for enemy in enemies:
-        enemy.update()
-        
-    # Verifica colisão do herói com inimigos
-    if hero.collidelist(enemies) != -1:
-        # Se colidiu, "reinicia" o herói
-        hero.pos = posicao_inicial
-        hero.vy = 0 # Zera a velocidade de queda
-        
-    # Verifica se o herói caiu para fora da tela
-    if hero.top > HEIGHT:
-        # Se caiu, "reinicia" o herói
-        hero.pos = posicao_inicial
-        hero.vy = 0 # Zera a velocidade de queda
+# Define os botões do Menu
+# Usamos 'Rect' (Retângulos) para os botões clicáveis
+start_button = Rect((WIDTH/2 - 100, HEIGHT/2 - 50), (200, 50))
+sound_button = Rect((WIDTH/2 - 100, HEIGHT/2 + 20), (200, 50))
+quit_button = Rect((WIDTH/2 - 100, HEIGHT/2 + 90), (200, 50))
 
-# Desenhando elementos na tela
-def draw():
-    screen.fill((210, 240, 255)) # Cor de fundo (céu azul claro)
+# Funções principais do jogo (update e draw)
+
+# Lógica do jogo (dividida por estado)
+def update():
+    global game_state # Avisa que vamos alterar a variável global
     
-    for plat in platforms:
-        plat.draw()  # Desenha cada plataforma
-    
-    # Desenha todos os inimigos
-    for enemy in enemies:
-        enemy.draw()
+    # Se estivermos no estado 'game', rodamos a lógica do jogo
+    if game_state == "game":
+        # Atualiza o jogador
+        hero.update(platforms)
         
-    hero.draw()  # Desenha o jogador
+        # Atualiza todos os inimigos
+        for enemy in enemies:
+            enemy.update()
+            
+        # Verifica colisão do herói com inimigos
+        if hero.collidelist(enemies) != -1:
+            # Se colidiu, "reinicia" o herói e toca som
+            hero.pos = posicao_inicial
+            hero.vy = 0 
+            try:
+                sounds.die.play() # Toca o som de morte
+            except:
+                pass
+            
+        # Verifica se o herói caiu para fora da tela
+        if hero.top > HEIGHT:
+            # Se caiu, "reinicia" o herói e toca som
+            hero.pos = posicao_inicial
+            hero.vy = 0
+            try:
+                sounds.die.play() # Toca o som de morte
+            except:
+                pass
+
+# Desenhando elementos na tela (dividido por estado)
+def draw():
+    global game_state, music_on
+    
+    # Se estivermos no estado 'menu'
+    if game_state == "menu":
+        screen.fill((50, 50, 150)) # Fundo azul escuro
+        
+        # Desenha o título
+        screen.draw.text("MEU JOGO DE PLATAFORMA", 
+                         center=(WIDTH/2, HEIGHT/2 - 150), 
+                         fontsize=50, color="white")
+        
+        # Desenha os botões
+        screen.draw.filled_rect(start_button, "green")
+        screen.draw.text("Começar o Jogo", 
+                         center=start_button.center, 
+                         fontsize=30, color="black")
+        
+        screen.draw.filled_rect(sound_button, "yellow")
+        # Mostra o texto do botão de som (ligado ou desligado)
+        sound_text = f"Música: {'LIGADA' if music_on else 'DESLIGADA'}"
+        screen.draw.text(sound_text, 
+                         center=sound_button.center, 
+                         fontsize=30, color="black")
+        
+        screen.draw.filled_rect(quit_button, "red")
+        screen.draw.text("Sair", 
+                         center=quit_button.center, 
+                         fontsize=30, color="black")
+
+    # Se estivermos no estado 'game'
+    elif game_state == "game":
+        screen.fill((210, 240, 255)) # Cor de fundo (céu azul claro)
+        
+        for plat in platforms:
+            plat.draw()  # Desenha cada plataforma
+        
+        for enemy in enemies:
+            enemy.draw() # Desenha todos os inimigos
+            
+        hero.draw()  # Desenha o jogador
+
+# Função de clique do mouse (só funciona no menu)
+def on_mouse_down(pos):
+    global game_state, music_on
+    
+    # Só processa cliques se estivermos no menu
+    if game_state == "menu":
+        
+        # Se clicou no botão "Começar"
+        if start_button.collidepoint(pos):
+            game_state = "game" # Muda o estado para 'game'
+            # Toca a música AGORA, quando o jogo começa
+            try:
+                # CORREÇÃO: Carregando o arquivo .MP3 original
+                music.play('music.mp3') 
+                music.set_volume(0.2)
+            except Exception as e:
+                print(f"Aviso: Não foi possível tocar a música: {e}")
+                print("Verifique se 'music.mp3' está na pasta 'music/'")
+        
+        # Se clicou no botão "Sair"
+        if quit_button.collidepoint(pos):
+            sys.exit() # Fecha o jogo
+            
+        # Se clicou no botão "Música"
+        if sound_button.collidepoint(pos):
+            music_on = not music_on # Inverte o valor
+            if music_on:
+                music.unpause()
+            else:
+                music.pause()
 
 # Inicia o jogo
 pgzrun.go()
