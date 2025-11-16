@@ -4,48 +4,48 @@ import random
 import sys # Usado para fechar o jogo
 from pygame import Rect # O import que faltava
 
-# Define as dimensÃµes da tela
+# Define as dimens?es da tela
 WIDTH = 800
 HEIGHT = 600
 
 # Titulo do jogo
-TITLE = "Teste Kodland - Jogo Completo"
+TITLE = "Teste Kodland - Jogo de Plataforma"
 
 # Define o estado inicial do jogo
 game_state = "menu"
 
-# Controla se a mÃºsica estÃ¡ ligada ou desligada
+# Controla se a música está ligada ou desligada
 music_on = True
 
 # Define a simple actor (sprite)
 class Player(Actor):
 
-    # O mÃ©todo __init__ Ã© o 'construtor', Ã© chamado quando criamos o objeto
+    # O método __init__ é o 'construtor', é chamado quando criamos o objeto
     def __init__(self, start_pos): 
-        # Carrega os frames de animaÃ§Ã£o
+        # Carrega os frames de animaç?o
         self.idle_frame = 'hero.png'      # Imagem de parado
         self.walk_frame = 'hero_walk.png' # Imagem de andando
 
-        # Avisa ao 'Actor' para carregar a imagem e posiÃ§Ã£o
+        # Avisa ao 'Actor' para carregar a imagem e posiç?o
         super().__init__(self.idle_frame, pos=start_pos)
 
-        # VariÃ¡veis de fÃ­sica
+        # Variáveis de física
         self.vy = 0  # Velocidade Vertical
-        self.gravity = 1 # ForÃ§a da Gravidade
+        self.gravity = 1 # Força da Gravidade
         self.speed = 5 # Velocidade de Movimento Horizontal
-        self.jump_strength = -15 # ForÃ§a do Pulo (valor negativo para subir)
-        self.on_ground = False # Indica se o jogador estÃ¡ no chÃ£o
+        self.jump_strength = -18 # Pulo mais forte
+        self.on_ground = False # Indica se o jogador está no ch?o
         
-        # VariÃ¡veis de AnimaÃ§Ã£o
-        self.animation_timer = time.time() # Timer para controlar a animaÃ§Ã£o
-        self.is_walking = False   # Flag para saber se estÃ¡ andando
+        # Variáveis de Animaç?o
+        self.animation_timer = time.time() # Timer para controlar a animaç?o
+        self.is_walking = False   # Flag para saber se está andando
 
-    # Nova FunÃ§Ã£o de AnimaÃ§Ã£o
+    # Nova Funç?o de Animaç?o
     def update_animation(self):
-        # Se nÃ£o estiver andando, usa a imagem de parado
+        # Se n?o estiver andando, usa a imagem de parado
         if not self.is_walking:
             self.image = self.idle_frame
-            return # Para a funÃ§Ã£o aqui
+            return # Para a funç?o aqui
 
         # Se estiver andando, "pisca" entre as duas imagens
         now = time.time()
@@ -54,7 +54,7 @@ class Player(Actor):
         else:
             self.image = self.idle_frame
 
-    # LÃ³gica de 'update' agora controla a animaÃ§Ã£o
+    # Lógica de 'update' agora controla a animaç?o
     def update(self, platform_list):
         # Reseta o flag de 'andando' a cada frame
         self.is_walking = False 
@@ -70,7 +70,7 @@ class Player(Actor):
         # Pulo
         if keyboard.up and self.on_ground:
             self.vy = self.jump_strength
-            self.on_ground = False # Sai do chÃ£o ao pular
+            self.on_ground = False # Sai do ch?o ao pular
             try:
                 sounds.jump.play() # Toca o som de pulo
             except:
@@ -80,45 +80,45 @@ class Player(Actor):
         self.vy += self.gravity
         self.y += self.vy
 
-        # Verifica colisÃ£o com plataformas
+        # Verifica colis?o com plataformas
         self.on_ground = False
 
-        for plat in platforms:
-            # Verifica se estÃ¡ colidindo com a plataforma
+        for plat in platform_list:
+            # Verifica se está colidindo com a plataforma
             if self.colliderect(plat) and self.vy >= 0:
-                # Verifica se a colisÃ£o Ã© por cima (evita grudar na lateral)
+                # Verifica se a colis?o é por cima (evita grudar na lateral)
                 if self.bottom <= plat.top + 20: 
-                    # Colidiu com a plataforma, ajusta a posiÃ§Ã£o
+                    # Colidiu com a plataforma, ajusta a posiç?o
                     self.bottom = plat.top
                     self.vy = 0 # Zera a velocidade vertical
-                    self.on_ground = True # EstÃ¡ no chÃ£o
+                    self.on_ground = True # Está no ch?o
                     break
         
-        # Chama a funÃ§Ã£o de animaÃ§Ã£o no final de toda a lÃ³gica
+        # Chama a funç?o de animaç?o no final de toda a lógica
         self.update_animation()
 
 # Define a classe do inimigo
 class Enemy(Actor):
     
     # Construtor da classe Inimigo
-    def __init__(self, start_pos):
-        # Carrega os frames de animaÃ§Ã£o do Inimigo
+    def __init__(self, start_pos, patrol_range=100):
+        # Carrega os frames de animaç?o do Inimigo
         self.idle_frame = 'enemy.png'      # Imagem do inimigo parado
         self.walk_frame = 'enemy_walk.png' # Imagem do inimigo andando
 
         # Inicia o Actor com o frame parado
         super().__init__(self.idle_frame, pos=start_pos)
         
-        # VariÃ¡veis de Patrulha
+        # Variáveis de Patrulha
         self.speed = 2          # Velocidade do inimigo
         self.direction = 1      # 1 = direita, -1 = esquerda
-        self.patrol_range = 100 # DistÃ¢ncia que ele anda para cada lado
-        self.start_x = self.x   # PosiÃ§Ã£o X inicial
+        self.patrol_range = patrol_range # Distância que ele anda
+        self.start_x = self.x   # Posiç?o X inicial
         
-        # VariÃ¡veis de AnimaÃ§Ã£o
+        # Variáveis de Animaç?o
         self.animation_timer = time.time()
 
-    # AnimaÃ§Ã£o do Inimigo (sempre animando)
+    # Animaç?o do Inimigo (sempre animando)
     def update_animation(self):
         now = time.time()
         # O inimigo pisca entre as duas imagens
@@ -127,7 +127,7 @@ class Enemy(Actor):
         else:
             self.image = self.idle_frame
 
-    # LÃ³gica de atualizaÃ§Ã£o do Inimigo
+    # Lógica de atualizaç?o do Inimigo
     def update(self):
         # Movimento de patrulha
         self.x += self.speed * self.direction
@@ -138,52 +138,70 @@ class Enemy(Actor):
         elif self.x < self.start_x - self.patrol_range:
             self.direction = 1  # Vira para a direita
             
-        # Chama a funÃ§Ã£o de animaÃ§Ã£o
+        # Chama a funç?o de animaç?o
         self.update_animation()
 
-# CriaÃ§Ã£o dos Objetos e NÃ­vel
+# Criaç?o dos Objetos e Nível
 
-# Definindo a posiÃ§Ã£o inicial do jogador
-posicao_inicial = (WIDTH // 2, HEIGHT // 2 - 100)
+# Definindo a posiç?o inicial do jogador (o seu "Começo")
+posicao_inicial = (70, 500)
 
 # Pgzero procura automaticamente por 'hero.png' na pasta 'images/'
 hero = Player(posicao_inicial)
 
-# Armazena todas as plataformas do nosso nÃ­vel
+# Armazena todas as plataformas do nosso nível
 platforms = []
 
-# criar um chÃ£o de 10 blocos na parte de baixo da tela
-for i in range(10):
-    x_pos = 50 + (i * 70)  # EspaÃ§amento entre blocos
-    y_pos = HEIGHT - 35    # PosiÃ§Ã£o vertical do chÃ£o
+# criar a fileira de 5 blocos de baixo (mais espaçada)
+for i in range(5):
+    # Posiç?es X: 70, 210, 350, 490, 630
+    x_pos = 70 + (i * 140)  
+    y_pos = HEIGHT - 35    # Posiç?o vertical do ch?o
     plat = Actor('platform.png', pos=(x_pos, y_pos))
     platforms.append(plat)
 
-# Plataforma flutuante
-plat_flutuante = Actor('platform.png', pos=(WIDTH / 2, HEIGHT / 2))
-platforms.append(plat_flutuante)
+# criar a fileira de 4 blocos de cima (no meio dos v?os)
+for i in range(4):
+    # CORREÇ?O: Posiç?es X: 140, 280, 420, 560
+    x_pos = 140 + (i * 140)  
+    y_pos = HEIGHT - 180   # Plataformas mais baixas
+    plat = Actor('platform.png', pos=(x_pos, y_pos))
+    platforms.append(plat)
 
 # Armazena todos os inimigos
 enemies = []
 
-# Cria um inimigo e o posiciona em cima do chÃ£o
-enemy_pos = (200, HEIGHT - 70) 
-enemy1 = Enemy(enemy_pos)
+# Cria o inimigo de baixo (patrulha as 3 casas do meio)
+# Centro: X=350. Alcance: 140 (de 210 a 490)
+enemy_pos_1 = (350, HEIGHT - 70) 
+enemy1 = Enemy(enemy_pos_1, patrol_range=140) 
 enemies.append(enemy1)
 
-# Define os botÃµes do Menu
-# Usamos 'Rect' (RetÃ¢ngulos) para os botÃµes clicÃ¡veis
+# Cria o inimigo de cima (patrulha todas as 4 casas de cima)
+# CORREÇ?O: Centro da patrulha: X=350 (entre 280 e 420)
+# CORREÇ?O: Alcance da patrulha: 210 (de 140 a 560)
+enemy_pos_2 = (350, HEIGHT - 215) 
+enemy2 = Enemy(enemy_pos_2, patrol_range=210)
+enemies.append(enemy2)
+
+# Cria o objetivo final (o seu "Fim!")
+# Posiç?o: no último bloco da plataforma de baixo (X=630)
+goal_pos = (630, HEIGHT - 70) # Posiç?o X do último bloco
+goal = Actor('goal.png', pos=goal_pos)
+
+
+# Define os bot?es do Menu
 start_button = Rect((WIDTH/2 - 100, HEIGHT/2 - 50), (200, 50))
 sound_button = Rect((WIDTH/2 - 100, HEIGHT/2 + 20), (200, 50))
 quit_button = Rect((WIDTH/2 - 100, HEIGHT/2 + 90), (200, 50))
 
-# FunÃ§Ãµes principais do jogo (update e draw)
+# Funç?es principais do jogo (update e draw)
 
-# LÃ³gica do jogo (dividida por estado)
+# Lógica do jogo (dividida por estado)
 def update():
-    global game_state # Avisa que vamos alterar a variÃ¡vel global
+    global game_state # Avisa que vamos alterar a variável global
     
-    # Se estivermos no estado 'game', rodamos a lÃ³gica do jogo
+    # Se estivermos no estado 'game', rodamos a lógica do jogo
     if game_state == "game":
         # Atualiza o jogador
         hero.update(platforms)
@@ -192,9 +210,9 @@ def update():
         for enemy in enemies:
             enemy.update()
             
-        # Verifica colisÃ£o do herÃ³i com inimigos
+        # Verifica colis?o do herói com inimigos
         if hero.collidelist(enemies) != -1:
-            # Se colidiu, "reinicia" o herÃ³i e toca som
+            # Se colidiu, "reinicia" o herói e toca som
             hero.pos = posicao_inicial
             hero.vy = 0 
             try:
@@ -202,15 +220,23 @@ def update():
             except:
                 pass
             
-        # Verifica se o herÃ³i caiu para fora da tela
+        # Verifica se o herói caiu para fora da tela
         if hero.top > HEIGHT:
-            # Se caiu, "reinicia" o herÃ³i e toca som
+            # Se caiu, "reinicia" o herói e toca som
             hero.pos = posicao_inicial
             hero.vy = 0
             try:
                 sounds.die.play() # Toca o som de morte
             except:
                 pass
+                
+        # Verifica se o herói tocou o objetivo (Fim!)
+        if hero.colliderect(goal):
+            print("NÍVEL CONCLUÍDO!")
+            game_state = "menu" # Volta para o menu
+            hero.pos = posicao_inicial # Reseta o herói
+            hero.vy = 0
+
 
 # Desenhando elementos na tela (dividido por estado)
 def draw():
@@ -220,20 +246,20 @@ def draw():
     if game_state == "menu":
         screen.fill((50, 50, 150)) # Fundo azul escuro
         
-        # Desenha o tÃ­tulo
+        # Desenha o título
         screen.draw.text("MEU JOGO DE PLATAFORMA", 
                          center=(WIDTH/2, HEIGHT/2 - 150), 
                          fontsize=50, color="white")
         
-        # Desenha os botÃµes
+        # Desenha os bot?es
         screen.draw.filled_rect(start_button, "green")
-        screen.draw.text("ComeÃ§ar o Jogo", 
+        screen.draw.text("Começar o Jogo", 
                          center=start_button.center, 
                          fontsize=30, color="black")
         
         screen.draw.filled_rect(sound_button, "yellow")
-        # Mostra o texto do botÃ£o de som (ligado ou desligado)
-        sound_text = f"MÃºsica: {'LIGADA' if music_on else 'DESLIGADA'}"
+        # Mostra o texto do bot?o de som (ligado ou desligado)
+        sound_text = f"Música: {'LIGADA' if music_on else 'DESLIGADA'}"
         screen.draw.text(sound_text, 
                          center=sound_button.center, 
                          fontsize=30, color="black")
@@ -245,7 +271,7 @@ def draw():
 
     # Se estivermos no estado 'game'
     elif game_state == "game":
-        screen.fill((210, 240, 255)) # Cor de fundo (cÃ©u azul claro)
+        screen.fill((210, 240, 255)) # Cor de fundo (céu azul claro)
         
         for plat in platforms:
             plat.draw()  # Desenha cada plataforma
@@ -253,32 +279,34 @@ def draw():
         for enemy in enemies:
             enemy.draw() # Desenha todos os inimigos
             
+        goal.draw() # Desenha o objetivo (a porta/chave)
+            
         hero.draw()  # Desenha o jogador
 
-# FunÃ§Ã£o de clique do mouse (sÃ³ funciona no menu)
+# Funç?o de clique do mouse (só funciona no menu)
 def on_mouse_down(pos):
     global game_state, music_on
     
-    # SÃ³ processa cliques se estivermos no menu
+    # Só processa cliques se estivermos no menu
     if game_state == "menu":
         
-        # Se clicou no botÃ£o "ComeÃ§ar"
+        # Se clicou no bot?o "Começar"
         if start_button.collidepoint(pos):
             game_state = "game" # Muda o estado para 'game'
-            # Toca a mÃºsica AGORA, quando o jogo comeÃ§a
+            # Toca a música AGORA, quando o jogo começa
             try:
-                # CORREÃ‡ÃƒO: Carregando o arquivo .MP3 original
+                # Vamos tentar tocar o MP3 que voc? baixou
                 music.play('music.mp3') 
                 music.set_volume(0.2)
             except Exception as e:
-                print(f"Aviso: NÃ£o foi possÃ­vel tocar a mÃºsica: {e}")
-                print("Verifique se 'music.mp3' estÃ¡ na pasta 'music/'")
+                print(f"Aviso: N?o foi possível tocar a música: {e}")
+                print("Verifique se 'music.mp3' está na pasta 'music/'")
         
-        # Se clicou no botÃ£o "Sair"
+        # Se clicou no bot?o "Sair"
         if quit_button.collidepoint(pos):
             sys.exit() # Fecha o jogo
             
-        # Se clicou no botÃ£o "MÃºsica"
+        # Se clicou no bot?o "Música"
         if sound_button.collidepoint(pos):
             music_on = not music_on # Inverte o valor
             if music_on:
