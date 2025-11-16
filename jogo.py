@@ -1,25 +1,24 @@
 import pgzrun
 import time
+import random # Adicionando a biblioteca random (permitida)
 
 # Define as dimensões da tela
 WIDTH = 800
 HEIGHT = 600
 
 # Titulo do jogo
-TITLE = "Teste Kodland - Etapa 4: Animação Simples"
+TITLE = "Teste Kodland - Etapa 5: Inimigos"
 
 # Define a simple actor (sprite)
 class Player(Actor):
 
     # O método __init__ é o 'construtor', é chamado quando criamos o objeto
-    def __init__(self, start_pos): # ATUALIZADO: Não precisa mais de 'image_file'
-        # --- Carrega os frames de animação ---
+    def __init__(self, start_pos): 
+        # Carrega os frames de animação
         self.idle_frame = 'hero.png'      # Imagem de parado
         self.walk_frame = 'hero_walk.png' # Imagem de andando
 
         # Avisa ao 'Actor' para carregar a imagem e posição
-        # 'Super()' chama o construtor da classe pai (Actor)
-        # ATUALIZADO: Inicia com o frame 'idle'
         super().__init__(self.idle_frame, pos=start_pos)
 
         # Variáveis de física
@@ -29,12 +28,11 @@ class Player(Actor):
         self.jump_strength = -15 # Força do Pulo (valor negativo para subir)
         self.on_ground = False # Indica se o jogador está no chão
         
-        # --- Variáveis de Animação (NOVAS) ---
+        # Variáveis de Animação
         self.animation_timer = time.time() # Timer para controlar a animação
         self.is_walking = False   # Flag para saber se está andando
-        # self.flip_x FOI REMOVIDO
 
-    # --- Nova Função de Animação ---
+    # Nova Função de Animação
     def update_animation(self):
         # Se não estiver andando, usa a imagem de parado
         if not self.is_walking:
@@ -42,16 +40,13 @@ class Player(Actor):
             return # Para a função aqui
 
         # Se estiver andando, "pisca" entre as duas imagens
-        # Isso cria a ilusão de animação ciclicamente (Requisito do Teste)
         now = time.time()
         if int(now * 10) % 2 == 0: # Alterna 5x por segundo
             self.image = self.walk_frame
         else:
             self.image = self.idle_frame
-            
-        # A lógica de 'angle' (que virava de cabeça para baixo) FOI REMOVIDA
 
-    # ATUALIZADO: A lógica de 'update' agora controla a animação
+    # Lógica de 'update' agora controla a animação
     def update(self, platform_list):
         # Reseta o flag de 'andando' a cada frame
         self.is_walking = False 
@@ -59,19 +54,17 @@ class Player(Actor):
         # Movimento lateral
         if keyboard.left:
             self.x -= self.speed
-            self.is_walking = True # ATUALIZADO
-            # self.flip_x FOI REMOVIDO
+            self.is_walking = True 
         if keyboard.right:
             self.x += self.speed
-            self.is_walking = True # ATUALIZADO
-            # self.flip_x FOI REMOVIDO
+            self.is_walking = True 
 
         # Pulo
         if keyboard.up and self.on_ground:
             self.vy = self.jump_strength
             self.on_ground = False # Sai do chão ao pular
         
-        # Aplica a gravidade (ATUALIZADO: Física correta, gravidade sempre aplica)
+        # Aplica a gravidade
         self.vy += self.gravity
         self.y += self.vy
 
@@ -89,15 +82,57 @@ class Player(Actor):
                     self.on_ground = True # Está no chão
                     break
         
-        # --- ATUALIZAÇÃO FINAL ---
         # Chama a função de animação no final de toda a lógica
         self.update_animation()
 
+# Define a classe do inimigo
+class Enemy(Actor):
+    
+    # Construtor da classe Inimigo
+    def __init__(self, start_pos):
+        # Carrega os frames de animação do Inimigo
+        self.idle_frame = 'enemy.png'      # Imagem do inimigo parado
+        self.walk_frame = 'enemy_walk.png' # Imagem do inimigo andando
+
+        # Inicia o Actor com o frame parado
+        super().__init__(self.idle_frame, pos=start_pos)
+        
+        # Variáveis de Patrulha
+        self.speed = 2          # Velocidade do inimigo
+        self.direction = 1      # 1 = direita, -1 = esquerda
+        self.patrol_range = 100 # Distância que ele anda para cada lado
+        self.start_x = self.x   # Posição X inicial
+        
+        # Variáveis de Animação
+        self.animation_timer = time.time()
+
+    # Animação do Inimigo (sempre animando)
+    def update_animation(self):
+        now = time.time()
+        # O inimigo pisca entre as duas imagens
+        if int(now * 5) % 2 == 0: # Alterna 2.5x por segundo
+            self.image = self.walk_frame
+        else:
+            self.image = self.idle_frame
+
+    # Lógica de atualização do Inimigo
+    def update(self):
+        # Movimento de patrulha
+        self.x += self.speed * self.direction
+        
+        # Verifica se atingiu o limite da patrulha
+        if self.x > self.start_x + self.patrol_range:
+            self.direction = -1 # Vira para a esquerda
+        elif self.x < self.start_x - self.patrol_range:
+            self.direction = 1  # Vira para a direita
+            
+        # Chama a função de animação
+        self.update_animation()
+
 # Definindo a posição inicial do jogador
-posicao_inicial = (WIDTH // 2, HEIGHT // 2-100)
+posicao_inicial = (WIDTH // 2, HEIGHT // 2 - 100)
 
 # Pgzero procura automaticamente por 'hero.png' na pasta 'images/'
-# ATUALIZADO: O construtor mudou, não passamos mais a imagem aqui
 hero = Player(posicao_inicial)
 
 # Armazena todas as plataformas do nosso nível
@@ -116,10 +151,34 @@ for i in range(10):
 plat_flutuante = Actor('platform.png', pos=(WIDTH / 2, HEIGHT / 2))
 platforms.append(plat_flutuante)
 
+# Armazena todos os inimigos
+enemies = []
+
+# Cria um inimigo e o posiciona em cima do chão
+enemy_pos = (200, HEIGHT - 70) 
+enemy1 = Enemy(enemy_pos)
+enemies.append(enemy1)
+
 # Lógica do jogo
 def update():
     # Atualiza o jogador, passando a lista de plataformas para colisão
     hero.update(platforms)
+    
+    # Atualiza todos os inimigos
+    for enemy in enemies:
+        enemy.update()
+        
+    # Verifica colisão do herói com inimigos
+    if hero.collidelist(enemies) != -1:
+        # Se colidiu, "reinicia" o herói
+        hero.pos = posicao_inicial
+        hero.vy = 0 # Zera a velocidade de queda
+        
+    # Verifica se o herói caiu para fora da tela
+    if hero.top > HEIGHT:
+        # Se caiu, "reinicia" o herói
+        hero.pos = posicao_inicial
+        hero.vy = 0 # Zera a velocidade de queda
 
 # Desenhando elementos na tela
 def draw():
@@ -128,6 +187,10 @@ def draw():
     for plat in platforms:
         plat.draw()  # Desenha cada plataforma
     
+    # Desenha todos os inimigos
+    for enemy in enemies:
+        enemy.draw()
+        
     hero.draw()  # Desenha o jogador
 
 # Inicia o jogo
